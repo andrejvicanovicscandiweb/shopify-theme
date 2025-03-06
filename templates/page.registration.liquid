@@ -1,0 +1,151 @@
+{% comment %}
+Templates > page.registration.liquid
+{% endcomment %}
+{% layout 'theme' %}
+
+<div class="registration-form">
+  <h1>{{ page.title }}</h1>
+  
+  <form id="customer-registration">
+    <div class="form-group">
+      <label for="email">{{ 'customer.register.email' | t }}*</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+
+    <div class="form-group">
+      <label for="password">{{ 'customer.register.password' | t }}*</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+
+    <div class="form-group">
+      <label for="firstName">{{ 'customer.register.first_name' | t }}</label>
+      <input type="text" id="firstName" name="firstName">
+    </div>
+
+    <div class="form-group">
+      <label for="lastName">{{ 'customer.register.last_name' | t }}</label>
+      <input type="text" id="lastName" name="lastName">
+    </div>
+
+    <button type="submit" id="submit-btn">
+      {{ 'customer.register.submit' | t }}
+    </button>
+  </form>
+
+  <div id="form-messages"></div>
+</div>
+
+<script>
+document.getElementById('customer-registration').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const submitBtn = document.getElementById('submit-btn');
+  const messages = document.getElementById('form-messages');
+
+  // Lock form
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing';
+  messages.innerHTML = '';
+
+  try {
+    const response = await fetch('/api/2023-07/graphql.json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': '9e736db88bd74957ad0a77e2fd04aed9'
+      },
+      body: JSON.stringify({
+        query: `
+          mutation customerCreate($input: CustomerCreateInput!) {
+            customerCreate(input: $input) {
+              customer {
+                id
+                email
+              }
+              customerUserErrors {
+                code
+                message
+                field
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            email: form.email.value,
+            password: form.password.value,
+            firstName: form.firstName.value,
+            lastName: form.lastName.value
+          }
+        }
+      })
+    });
+
+    const data = await response.json();
+    const result = data.data.customerCreate;
+
+    if (result.customerUserErrors.length > 0) {
+      messages.innerHTML = result.customerUserErrors
+        .map(error => `<div class="error">${error.message}</div>`)
+        .join('');
+    } else {
+      messages.innerHTML = `<div class="success">Account created succesfully</div>`;
+      form.reset();
+    }
+  } catch (error) {
+    messages.innerHTML = `<div class="error">Oops.. Something went wrong!</div>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '{{ "customer.register.submit" | t }}';
+  }
+});
+</script>
+
+<style>
+  .registration-form {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  button {
+    background: #007bff;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .error {
+    color: #dc3545;
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+  }
+
+  .success {
+    color: #28a745;
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #28a745;
+    border-radius: 4px;
+  }
+</style>
