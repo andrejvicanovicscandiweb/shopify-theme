@@ -1,0 +1,60 @@
+{% comment %}
+Templates > page.ajax-cart.liquid
+{% endcomment %}
+{% layout 'theme' %} {% comment %} Provjeri ime svog layouta (obično 'theme.liquid') {% endcomment %}
+{% comment %} Ovo ovisi o tvojoj temi {% endcomment %}
+
+<div class="custom-page">
+  <h1>{{ page.title }}</h1>
+  
+  <!-- Banner 1 -->
+  <div class="banner" style="background: #f0f0f0; padding: 20px; margin: 20px 0;">
+    <h2>Banner 1</h2>
+    <p>Ovde možeš dodati sliku ili tekst</p>
+  </div>
+
+  <!-- Banner 2 -->
+  <div class="banner" style="background: #e0e0e0; padding: 20px; margin: 20px 0;">
+    <h2>Banner 2</h2>
+    <p>Drugi banner sa custom sadržajem</p>
+  </div>
+
+  <!-- Add to Cart dugme -->
+  <button 
+    id="addToCartBtn" 
+    class="button"
+    data-variant-id="{{ all_products.first.variants.first.id }}" {% comment %} Uzima prvi dostupni proizvod {% endcomment %}
+  >
+    Dodaj u korpu
+  </button>
+</div>
+
+<script>
+document.getElementById('addToCartBtn').addEventListener('click', async () => {
+  const variantId = document.getElementById('addToCartBtn').dataset.variantId;
+  
+  try {
+    const response = await fetch('/cart/add.js', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        items: [{
+          id: variantId,
+          quantity: 1
+        }]
+      })
+    });
+
+    if (response.ok) {
+      // Trigger za update mini korpe
+      document.dispatchEvent(new CustomEvent('cart:refresh'));
+      alert('Proizvod dodan u korpu!');
+    }
+  } catch (error) {
+    console.error('Greška:', error);
+  }
+});
+</script>
